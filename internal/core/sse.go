@@ -38,13 +38,20 @@ func (s *Server) handleSSE(c *gin.Context) {
 
 	// auth
 	authenticated := false
-	keyQuery := c.Request.URL.Query()["key"]
 	mcpConfig := s.state.prefixToMCPServerConfig[prefix]
-	if len(keyQuery) > 0 {
-		if keyQuery[0] == mcpConfig.Env["authQueryKey"] {
+	authQueryKey := mcpConfig.Env["authQueryKey"]
+	keyQuery := c.Request.URL.Query()["key"]
+	aidenAuthHeader := c.Request.Header.Get("Aiden-Authorization")
+	switch {
+	case len(keyQuery) > 0:
+		if keyQuery[0] == authQueryKey {
 			authenticated = true
 		}
-	} else {
+	case len(aidenAuthHeader) > 0:
+		if aidenAuthHeader == authQueryKey {
+			authenticated = true
+		}
+	default:
 		bearerAuthenticator := impl.BearerAuthenticator{Header: "Authorization", ArgKey: "Authorization"}
 		if err := bearerAuthenticator.Authenticate(c.Request.Context(), c.Request); err == nil {
 			config := jwt.Config{SecretKey: mcpConfig.Env["authSecretKey"]}
