@@ -50,6 +50,16 @@ func (s *Server) handleSSE(c *gin.Context) {
 	case len(aidenAuthHeader) > 0:
 		if aidenAuthHeader == authQueryKey {
 			authenticated = true
+		} else {
+			bearerAuthenticator := impl.BearerAuthenticator{Header: "Aiden-Authorization", ArgKey: "Aiden-Authorization"}
+			if err := bearerAuthenticator.Authenticate(c.Request.Context(), c.Request); err == nil {
+				config := jwt.Config{SecretKey: mcpConfig.Env["authSecretKey"]}
+				service := jwt.NewService(config)
+				_, err = service.ValidateTokenWithCustomClaims(c.Request.Context().Value("Aiden-Authorization").(string))
+				if err == nil {
+					authenticated = true
+				}
+			}
 		}
 	default:
 		bearerAuthenticator := impl.BearerAuthenticator{Header: "Authorization", ArgKey: "Authorization"}
