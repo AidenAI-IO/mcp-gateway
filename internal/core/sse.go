@@ -38,39 +38,30 @@ func (s *Server) handleSSE(c *gin.Context) {
 
 	// auth
 	authenticated := false
+
 	mcpConfig := s.state.prefixToMCPServerConfig[prefix]
+
 	authQueryKey := mcpConfig.Env["authQueryKey"]
 	keyQuery := c.Request.URL.Query()["key"]
+
 	aidenAuthHeader := c.Request.Header.Get("Aiden-Authorization")
+	authHeader := c.Request.Header.Get("Authorization")
+
+	var headerName string
+	if len(aidenAuthHeader) > 0 {
+		headerName = "Aiden-Authorization"
+	} else if len(authHeader) > 0 {
+		headerName = "Authorization"
+	}
+
 	switch {
 	case len(keyQuery) > 0:
 		if keyQuery[0] == authQueryKey {
 			authenticated = true
 		}
-	case len(aidenAuthHeader) > 0:
-		if aidenAuthHeader == authQueryKey {
-			authenticated = true
-		} else {
-			bearerAuthenticator := impl.BearerAuthenticator{Header: "Aiden-Authorization", ArgKey: "Aiden-Authorization"}
-			if err := bearerAuthenticator.Authenticate(c.Request.Context(), c.Request); err == nil {
-				config := jwt.Config{SecretKey: mcpConfig.Env["authSecretKey"]}
-				service := jwt.NewService(config)
-				_, err = service.ValidateTokenWithCustomClaims(c.Request.Context().Value("Aiden-Authorization").(string))
-				if err == nil {
-					authenticated = true
-				}
-			}
-		}
+	case len(headerName) > 0:
+		authenticated = authenticate(headerName, mcpConfig.Env["authSecretKey"], c.Request)
 	default:
-		bearerAuthenticator := impl.BearerAuthenticator{Header: "Authorization", ArgKey: "Authorization"}
-		if err := bearerAuthenticator.Authenticate(c.Request.Context(), c.Request); err == nil {
-			config := jwt.Config{SecretKey: mcpConfig.Env["authSecretKey"]}
-			service := jwt.NewService(config)
-			_, err = service.ValidateTokenWithCustomClaims(c.Request.Context().Value("Authorization").(string))
-			if err == nil {
-				authenticated = true
-			}
-		}
 	}
 
 	key, err := s.getValidMCPKey(&mcpConfig, false)
@@ -599,4 +590,18 @@ func (s *Server) getValidMCPKey(config *config.MCPServerConfig, invalidate bool)
 	url.RawQuery = values.Encode()
 	config.URL = url.String()
 	return value, nil
+}
+
+func authenticate(headerName, authSecretKey string, req *http.Request) bool {
+	var authenticated bool
+	bearerAuthenticator := impl.BearerAuthenticator{Header: headerName, ArgKey: headerName}
+	if err := bearerAuthenticator.Authenticate(req.Context(), req); err == nil {
+		conf := jwt.Config{SecretKey: authSecretKey}
+		service := jwt.NewService(conf)
+		_, err = service.ValidateTokenWithCustomClaims(req.Context().Value(headerName).(string))
+		if err == nil {
+			authenticated = true
+		}
+	}
+	return authenticated
 }
