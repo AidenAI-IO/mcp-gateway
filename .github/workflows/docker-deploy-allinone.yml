@@ -1,0 +1,23 @@
+name: Docker Build and Publish Allinone Linux 
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main-aiden ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Run remote deploy script
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            bash /opt/mcp-gateway/deploy.sh 
