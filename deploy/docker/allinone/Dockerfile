@@ -34,7 +34,7 @@ COPY web/ .
 
 RUN npm run build
 
-FROM ghcr.io/mcp-ecosystem/mcp-gateway/base:latest AS runtime
+FROM ghcr.io/amoylab/unla/base:latest AS runtime
 
 ARG PIP_INDEX_URL=https://pypi.org/simple
 ARG UV_DEFAULT_INDEX=https://pypi.org/simple
