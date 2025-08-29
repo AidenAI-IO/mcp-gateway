@@ -53,6 +53,9 @@ func (s *Server) handleSSE(c *gin.Context) {
 	} else if len(authHeader) > 0 {
 		headerName = "Authorization"
 	}
+	s.logger.Info("checking auth token availability",
+		zap.String("jwt_token", c.Request.Header.Get(headerName)),
+	)
 
 	switch {
 	case len(keyQuery) > 0:
