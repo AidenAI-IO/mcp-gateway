@@ -126,7 +126,7 @@ func InvokeSSETool(c *gin.Context, conn session.Connection, mcpProxyCfg config.M
 		return nil, fmt.Errorf("failed to create SSE transport: %w", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
 	defer cancel()
 
 	// Start the transport
