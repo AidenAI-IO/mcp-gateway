@@ -128,10 +128,10 @@ func InvokeSSETool(c *gin.Context, conn session.Connection, mcpProxyCfg config.M
 
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
 	defer cancel()
-	c.Request = c.Request.WithContext(ctx)
+	//c.Request = c.Request.WithContext(ctx)
 
 	// Start the transport
-	if err := sseTransport.Start(c.Request.Context()); err != nil {
+	if err := sseTransport.Start(ctx); err != nil {
 		return nil, fmt.Errorf("failed to start SSE transport: %w", err)
 	}
 
@@ -147,7 +147,7 @@ func InvokeSSETool(c *gin.Context, conn session.Connection, mcpProxyCfg config.M
 		Version: version.Get(),
 	}
 
-	_, err = mcpCli.Initialize(c.Request.Context(), initRequest)
+	_, err = mcpCli.Initialize(ctx, initRequest)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize SSE client: %w", err)
 	}
@@ -163,7 +163,7 @@ func InvokeSSETool(c *gin.Context, conn session.Connection, mcpProxyCfg config.M
 	callRequest.Params.Name = params.Name
 	callRequest.Params.Arguments = toolCallRequestParams
 
-	mcpgoResult, err := mcpCli.CallTool(c.Request.Context(), callRequest)
+	mcpgoResult, err := mcpCli.CallTool(ctx, callRequest)
 	if err != nil {
 		return nil, fmt.Errorf("failed to call tool: %w", err)
 	}
