@@ -163,7 +163,9 @@ func InvokeSSETool(c *gin.Context, conn session.Connection, mcpProxyCfg config.M
 	callRequest.Params.Name = params.Name
 	callRequest.Params.Arguments = toolCallRequestParams
 
+	fmt.Println("before call tool")
 	mcpgoResult, err := mcpCli.CallTool(ctx, callRequest)
+	fmt.Println("after call tool")
 	if err != nil {
 		return nil, fmt.Errorf("failed to call tool: %w", err)
 	}
