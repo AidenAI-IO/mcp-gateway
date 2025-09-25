@@ -553,8 +553,12 @@ func (s *Server) handlePostMessage(c *gin.Context, conn session.Connection) {
 						return
 					}
 				}
+				s.logger.Info("InvokeSSETool",
+					zap.Any("result", result),
+				)
 				s.sendSuccessResponse(c, conn, req, result, true)
 			}()
+			s.logger.Info("return from handlePostMessage")
 			c.String(http.StatusAccepted, mcp.Accepted)
 			return
 		case cnst.BackendProtoStreamable:
