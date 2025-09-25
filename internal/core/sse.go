@@ -522,36 +522,41 @@ func (s *Server) handlePostMessage(c *gin.Context, conn session.Connection) {
 			if len(value) > 0 && len(key) > 0 {
 				mcpProxyCfg.URL += fmt.Sprintf("?%s=%s", key, value)
 			}
-			result, err = mcpproxy.InvokeSSETool(c, conn, mcpProxyCfg, params)
-			if err != nil {
-				s.sendToolExecutionError(c, conn, req, err, true)
-				return
-			}
-			for result != nil && result.IsError {
-				isInvalidKey := false
-				for _, content := range result.Content {
-					if content.GetType() == "text" &&
-						(strings.Contains(content.(*mcp.TextContent).Text, "INVALID_USER_KEY") ||
-							strings.Contains(content.(*mcp.TextContent).Text, "Invalid Key") ||
-							strings.Contains(content.(*mcp.TextContent).Text, "Authentication failed")) {
-						isInvalidKey = true
-						break
-					}
-				}
-				if !isInvalidKey {
-					break
-				}
-				value, err = s.getValidMCPKey(&mcpProxyCfg, true)
-				if err != nil {
-					break
-				}
-				conn.Meta().SetAuthQueryKey(value)
+			go func() {
 				result, err = mcpproxy.InvokeSSETool(c, conn, mcpProxyCfg, params)
 				if err != nil {
 					s.sendToolExecutionError(c, conn, req, err, true)
 					return
 				}
-			}
+				for result != nil && result.IsError {
+					isInvalidKey := false
+					for _, content := range result.Content {
+						if content.GetType() == "text" &&
+							(strings.Contains(content.(*mcp.TextContent).Text, "INVALID_USER_KEY") ||
+								strings.Contains(content.(*mcp.TextContent).Text, "Invalid Key") ||
+								strings.Contains(content.(*mcp.TextContent).Text, "Authentication failed")) {
+							isInvalidKey = true
+							break
+						}
+					}
+					if !isInvalidKey {
+						break
+					}
+					value, err = s.getValidMCPKey(&mcpProxyCfg, true)
+					if err != nil {
+						break
+					}
+					conn.Meta().SetAuthQueryKey(value)
+					result, err = mcpproxy.InvokeSSETool(c, conn, mcpProxyCfg, params)
+					if err != nil {
+						s.sendToolExecutionError(c, conn, req, err, true)
+						return
+					}
+				}
+				s.sendSuccessResponse(c, conn, req, result, true)
+			}()
+			c.String(http.StatusAccepted, mcp.Accepted)
+			return
 		case cnst.BackendProtoStreamable:
 			mcpProxyCfg, ok := s.state.prefixToMCPServerConfig[conn.Meta().Prefix]
 			if !ok {
