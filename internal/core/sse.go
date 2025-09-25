@@ -160,6 +160,9 @@ func (s *Server) handleSSE(c *gin.Context) {
 		zap.String("remote_addr", c.Request.RemoteAddr),
 	)
 
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
 	// Main event loop
 	for {
 		select {
@@ -195,6 +198,16 @@ func (s *Server) handleSSE(c *gin.Context) {
 						zap.String("event_type", event.Event),
 					)
 				}
+			}
+			c.Writer.Flush()
+		case <-ticker.C:
+			_, err := fmt.Fprintf(c.Writer, ": keep-alive\n\n")
+			if err != nil {
+				s.logger.Error("failed to send keep-alive ping",
+					zap.Error(err),
+					zap.String("session_id", sessionID),
+				)
+				return
 			}
 			c.Writer.Flush()
 		case <-c.Request.Context().Done():
