@@ -63,10 +63,20 @@ func (s *Server) handleSSE(c *gin.Context) {
 			authenticated = true
 		}
 	case len(headerName) > 0:
-		authenticated = authenticate(headerName, mcpConfig.Env["authSecretKey"], c.Request)
+		// if header matches following value, then pass
+		// 1. authQueryKey
+		// 2. Bearer JWT
+		// 3. raw JWT
+		headerValue := c.Request.Header.Get(headerName)
+		authenticated = headerValue == authQueryKey || authenticate(headerName, mcpConfig.Env["authSecretKey"], c.Request)
 	default:
 	}
 
+	// check auth
+	if !authenticated {
+		s.sendProtocolError(c, "", "invalid auth", http.StatusUnauthorized, mcp.ErrorCodeUnauthorized)
+		return
+	}
 	key, err := s.getValidMCPKey(&mcpConfig, false)
 	if err != nil {
 		s.logger.Error("failed to get MCP key",
