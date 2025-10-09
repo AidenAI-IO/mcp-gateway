@@ -64,11 +64,11 @@ func (s *Server) handleSSE(c *gin.Context) {
 		}
 	case len(headerName) > 0:
 		// if header matches following value, then pass
-		// 1. Bearer JWT
-		// 2. raw JWT
-		// 3. authQueryKey
-		contextValue, ok := c.Request.Context().Value(headerName).(string)
-		authenticated = authenticate(headerName, mcpConfig.Env["authSecretKey"], c.Request) || (ok && contextValue == authQueryKey)
+		// 1. authQueryKey
+		// 2. Bearer JWT
+		// 3. raw JWT
+		headerValue := c.Request.Header.Get(headerName)
+		authenticated = headerValue == authQueryKey || authenticate(headerName, mcpConfig.Env["authSecretKey"], c.Request)
 	default:
 	}
 
