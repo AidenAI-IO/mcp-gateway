@@ -73,10 +73,10 @@ func (s *Server) handleSSE(c *gin.Context) {
 	}
 
 	// check auth
-	if !authenticated {
-		s.sendProtocolError(c, "", "invalid auth", http.StatusUnauthorized, mcp.ErrorCodeUnauthorized)
-		return
-	}
+	//if !authenticated {
+	//	s.sendProtocolError(c, "", "invalid auth", http.StatusUnauthorized, mcp.ErrorCodeUnauthorized)
+	//	return
+	//}
 	key, err := s.getValidMCPKey(&mcpConfig, false)
 	if err != nil {
 		s.logger.Error("failed to get MCP key",
